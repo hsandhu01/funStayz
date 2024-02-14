@@ -6,30 +6,21 @@ const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 
-
 const { environment } = require('./config');
 const isProduction = environment === 'production';
 
-
 const app = express();
 
-
 app.use(morgan('dev'));
-
-
 app.use(cookieParser());
 app.use(express.json());
 
-// Security Middlewares
 if (!isProduction) {
-  // Enable CORS only in development
   app.use(cors());
 }
 
-
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 
-// CSRF protection
 app.use(csurf({
   cookie: {
     secure: isProduction,
@@ -38,11 +29,43 @@ app.use(csurf({
   }
 }));
 
-
 const routes = require('./routes');
-
-// Connect rtes
 app.use(routes);
 
-// expirt app
+// resource not found error handler 
+app.use((_req, _res, next) => {
+  const err = new Error("The requested resource couldn't be found.");
+  err.title = "Resource Not Found";
+  err.errors = { "message": "The requested resource couldn't be found." };
+  err.status = 404;
+  next(err);
+});
+
+// sequelize handling errors
+const { ValidationError } = require('sequelize');
+app.use((err, _req, _res, next) => {
+  if (err instanceof ValidationError) {
+    const errors = {};
+    err.errors.forEach(error => {
+      errors[error.path] = error.message;
+    });
+    err.title = 'Validation error';
+    err.errors = errors;
+    err.status = 400;
+  }
+  next(err);
+});
+
+// errors 
+app.use((err, _req, res, _next) => {
+  res.status(err.status || 500);
+  console.error(err);
+  res.json({
+    title: err.title || 'Server Error',
+    message: err.message,
+    errors: err.errors,
+    stack: isProduction ? null : err.stack
+  });
+});
+
 module.exports = app;
