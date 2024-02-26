@@ -4,29 +4,27 @@ const bcrypt = require('bcryptjs');
 const { setTokenCookie } = require('../../utils/auth');
 const { User } = require('../../db/models');
 
-// backend/routes/api/users.js
-// ...
+// Create a router instance
+const router = express.Router();
 
 // Sign up
-router.post(
-    '/',
-    async (req, res) => {
-      const { email, password, username } = req.body;
-      const hashedPassword = bcrypt.hashSync(password);
-      const user = await User.create({ email, username, hashedPassword });
-  
-      const safeUser = {
+router.post('/', async (req, res) => {
+    const { email, password, username } = req.body;
+    const hashedPassword = bcrypt.hashSync(password);
+    const user = await User.create({ email, username, hashedPassword });
+
+    const safeUser = {
         id: user.id,
         email: user.email,
         username: user.username,
-      };
-  
-      await setTokenCookie(res, safeUser);
-  
-      return res.json({
+    };
+
+    await setTokenCookie(res, safeUser);
+
+    return res.json({
         user: safeUser
-      });
-    }
-  );
-  
+    });
+});
+
+// Export the router
 module.exports = router;
