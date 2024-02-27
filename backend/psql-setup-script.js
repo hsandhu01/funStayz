@@ -1,3 +1,5 @@
+// backend/psql-setup-script.js
+
 const { sequelize } = require('./db/models');
 
 sequelize.showAllSchemas({ logging: false }).then(async (data) => {
