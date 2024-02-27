@@ -36,6 +36,16 @@ module.exports = (sequelize, DataTypes) => {
         validate: {
           len: [60, 60]
         }
+      },
+      // first name added her
+      firstName: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      // last name added here for phase 5
+      lastName: {
+        type: DataTypes.STRING,
+        allowNull: false,
       }
     },
     {
