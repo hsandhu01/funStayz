@@ -8,7 +8,7 @@
     "start": "per-env",
     "start:development": "nodemon ./bin/www",
     "start:production": "node ./bin/www",
-    "build": "node psql-setup-script.js"
+    "build": "node backend/psql-setup-script.js"
   },
   "keywords": [],
   "author": "",
