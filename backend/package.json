@@ -1,15 +1,12 @@
 {
-  "name": "funstayz",
+  "name": "backend",
   "version": "1.0.0",
-  "description": "## Database Schema Design",
-  "main": "index.js",
+  "description": "Backend service for FunStayz project.",
+  "main": "app.js",
   "scripts": {
-    "install": "npm --prefix backend install backend",
-    "dev:backend": "npm install --prefix backend start",
-    "sequelize": "npm run --prefix backend sequelize",
-    "sequelize-cli": "npm run --prefix backend sequelize-cli",
-    "start": "npm start --prefix backend",
-    "build": "npm run --prefix backend build"
+    "start": "node app.js",
+    "build": "node psql-setup-script.js",
+    "sequelize": "sequelize"
   },
   "keywords": [],
   "author": "",
