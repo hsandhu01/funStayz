@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { Spot, Image, Review, User } = require('../db/models');
-const { requireAuth } = require('../utils/auth'); 
+const { Spot, Image, Review, User } = require('../../db/models'); 
+const { requireAuth } = require('../../utils/auth'); 
 
 // for the rating
 const getAverageRating = (reviews) => {
