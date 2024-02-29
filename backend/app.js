@@ -5,7 +5,7 @@ const cors = require('cors');
 const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-// Import spotsRouter
+// import spotsRouter
 const spotsRouter = require('./routes/spots');
 
 const { environment } = require('./config');
@@ -31,14 +31,19 @@ app.use(csurf({
   }
 }));
 
-// Use the spots router for routes starting with /api/spots
+// using spots routers
 app.use('/api/spots', spotsRouter);
 
-// Continue with the rest of your routes
+// the rest of my routes
 const routes = require('./routes');
 app.use(routes);
 
-// Resource not found error handler
+// got errors on render so adding this
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Welcome to the API' });
+});
+
+// this is only for errors
 app.use((_req, _res, next) => {
   const err = new Error("The requested resource couldn't be found.");
   err.title = "Resource Not Found";
@@ -47,7 +52,7 @@ app.use((_req, _res, next) => {
   next(err);
 });
 
-// Sequelize handling errors
+// errors sequelize related
 const { ValidationError } = require('sequelize');
 app.use((err, _req, _res, next) => {
   if (err instanceof ValidationError) {
