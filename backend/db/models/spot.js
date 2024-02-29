@@ -1,32 +1,54 @@
+// models/spot.js
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class Spot extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+      // association with User model (a Spot belongs to a User)
+      Spot.belongsTo(models.User, { foreignKey: 'ownerId', as: 'Owner' });
+
+      // association with Image model (a Spot can have many Images)
+      Spot.hasMany(models.Image, { foreignKey: 'spotId', as: 'Images' });
+
+      // association with Review model (a Spot can have many Reviews)
+      Spot.hasMany(models.Review, { foreignKey: 'spotId', as: 'Reviews' });
     }
   }
+
   Spot.init({
-    ownerId: DataTypes.INTEGER,
+    ownerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'Users', key: 'id' }
+    },
     address: DataTypes.STRING,
     city: DataTypes.STRING,
     state: DataTypes.STRING,
     country: DataTypes.STRING,
     lat: DataTypes.FLOAT,
     lng: DataTypes.FLOAT,
-    name: DataTypes.STRING,
-    description: DataTypes.TEXT,
-    price: DataTypes.DECIMAL
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false
+    },
+    price: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    avgRating: {
+      type: DataTypes.FLOAT,
+      
+    },
+    previewImage: DataTypes.STRING 
   }, {
     sequelize,
     modelName: 'Spot',
   });
+
   return Spot;
 };

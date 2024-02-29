@@ -4,7 +4,10 @@ const { Model, Validator } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // define association here
+      // User can have many Spots
+      User.hasMany(models.Spot, { foreignKey: 'ownerId', as: 'Spots' });
+      // User can have many Reviews
+      User.hasMany(models.Review, { foreignKey: 'userId', as: 'Reviews' });
     }
   };
 
@@ -25,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true, // Ensure email is unique
         validate: {
           len: [3, 256],
           isEmail: true
@@ -40,13 +44,22 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "User",
+      modelName: 'User',
       defaultScope: {
         attributes: {
-          exclude: ["hashedPassword", "email", "createdAt", "updatedAt"]
+          exclude: ['hashedPassword', 'email', 'createdAt', 'updatedAt']
+        }
+      },
+      scopes: {
+        currentUser: {
+          attributes: { exclude: ['hashedPassword'] }
+        },
+        loginUser: {
+          attributes: {}
         }
       }
     }
   );
+
   return User;
 };

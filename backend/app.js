@@ -6,7 +6,7 @@ const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 // import spotsRouter
-const spotsRouter = require('./routes/spots');
+const spotsRouter = require('./routes/api/spots');
 
 const { environment } = require('./config');
 const isProduction = environment === 'production';
