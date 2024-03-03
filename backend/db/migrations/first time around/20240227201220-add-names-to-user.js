@@ -1,4 +1,4 @@
-// migrations/[timestamp]-add-first-last-name-to-users.js
+
 'use strict';
 
 let options = {};
