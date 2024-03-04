@@ -1,7 +1,7 @@
 'use strict';
 
 let options = {};
-if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+if (process.env.NODE_ENV === 'production') {
   options.schema = process.env.SCHEMA;
 }
 
@@ -17,10 +17,7 @@ module.exports = {
       spotId: {
         type: Sequelize.INTEGER,
         references: {
-          model: {
-            tableName: 'Spots',
-            schema: options.schema
-          },
+          model: 'Spots',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -37,17 +34,16 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
     }, options);
   },
   down: async (queryInterface, Sequelize) => {
-    options.tableName = 'SpotImages';
-    await queryInterface.dropTable(options);
+    await queryInterface.dropTable('SpotImages', options);
   }
 };

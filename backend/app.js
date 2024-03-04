@@ -5,11 +5,8 @@ const cors = require('cors');
 const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-
-
+// import spotsRouter
 const spotsRouter = require('./routes/api/spots');
-const usersRouter = require('./routes/api/users');
-const reviewsRouter = require('./routes/api/reviews'); 
 
 const { environment } = require('./config');
 const isProduction = environment === 'production';
@@ -34,40 +31,48 @@ app.use(csurf({
   }
 }));
 
-
+// using spots routers
 app.use('/api/spots', spotsRouter);
-app.use('/api/users', usersRouter); 
-app.use('/api/reviews', reviewsRouter); 
 
+// the rest of my routes
+const routes = require('./routes');
+app.use(routes);
 
+// got errors on render so adding this
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'Welcome to the API' });
 });
 
-
-
+// this is only for errors
 app.use((_req, _res, next) => {
   const err = new Error("The requested resource couldn't be found.");
+  err.title = "Resource Not Found";
+  err.errors = { "message": "The requested resource couldn't be found." };
   err.status = 404;
   next(err);
 });
 
-// validation
+// errors sequelize related
 const { ValidationError } = require('sequelize');
 app.use((err, _req, _res, next) => {
   if (err instanceof ValidationError) {
+    const errors = {};
+    err.errors.forEach(error => {
+      errors[error.path] = error.message;
+    });
+    err.title = 'Validation error';
+    err.errors = errors;
     err.status = 400;
-    err.errors = err.errors.reduce((acc, current) => {
-      acc[current.path] = current.message;
-      return acc;
-    }, {});
   }
   next(err);
 });
 
-// errors
+// Errors
 app.use((err, _req, res, _next) => {
-  res.status(err.status || 500).json({
+  res.status(err.status || 500);
+  console.error(err);
+  res.json({
+    title: err.title || 'Server Error',
     message: err.message,
     errors: err.errors,
     stack: isProduction ? null : err.stack

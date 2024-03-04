@@ -1,21 +1,29 @@
 'use strict';
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert('Bookings', [
       {
-        spotId: 1, 
         userId: 1, 
-        startDate: new Date(),
+        spotId: 1,
+        startDate: new Date(), 
         endDate: new Date(new Date().setDate(new Date().getDate() + 7)), 
         createdAt: new Date(),
         updatedAt: new Date()
       },
-    
-    ]);
+      {
+        userId: 2, 
+        spotId: 2, 
+        startDate: new Date(new Date().setDate(new Date().getDate() + 8)), 
+        endDate: new Date(new Date().setDate(new Date().getDate() + 15)), 
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+     
+    ], {});
   },
 
-  down: async (queryInterface, Sequelize) => {
-    return queryInterface.bulkDelete('Bookings', null, {});
+  async down(queryInterface, Sequelize) {
+    await queryInterface.bulkDelete('Bookings', null, {});
   }
 };

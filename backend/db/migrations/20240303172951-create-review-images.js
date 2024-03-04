@@ -1,7 +1,7 @@
 'use strict';
 
 let options = {};
-if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+if (process.env.NODE_ENV === 'production') {
   options.schema = process.env.SCHEMA;
 }
 
@@ -15,35 +15,31 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       reviewId: {
-      type: Sequelize.INTEGER,
-      references: {
-      model: {
-      tableName: 'Reviews',
-      schema: options.schema
-      },
-      key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'SET NULL'
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'Reviews',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
       },
       url: {
-      type: Sequelize.STRING,
-      allowNull: false
+        type: Sequelize.STRING,
+        allowNull: false
       },
       createdAt: {
-      allowNull: false,
-      type: Sequelize.DATE,
-      defaultValue: Sequelize.fn('now')
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
-      allowNull: false,
-      type: Sequelize.DATE,
-      defaultValue: Sequelize.fn('now')
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
-      }, options);
-      },
-      down: async (queryInterface, Sequelize) => {
-      options.tableName = 'ReviewImages';
-      await queryInterface.dropTable(options);
-      }
-      };
+    }, options);
+  },
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.dropTable('ReviewImages', options);
+  }
+};

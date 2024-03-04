@@ -1,10 +1,4 @@
 'use strict';
-
-let options = {};
-if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
-  options.schema = process.env.SCHEMA;
-}
-
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('Bookings', {
@@ -16,26 +10,12 @@ module.exports = {
       },
       spotId: {
         type: Sequelize.INTEGER,
-        references: {
-          model: {
-            tableName: 'Spots',
-            schema: options.schema
-          },
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
+        references: { model: 'Spots', key: 'id' },
         onDelete: 'CASCADE'
       },
       userId: {
         type: Sequelize.INTEGER,
-        references: {
-          model: {
-            tableName: 'Users',
-            schema: options.schema
-          },
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
+        references: { model: 'Users', key: 'id' },
         onDelete: 'CASCADE'
       },
       startDate: {
@@ -49,17 +29,16 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('now')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       }
-    }, options);
+    });
   },
   down: async (queryInterface, Sequelize) => {
-    options.tableName = 'Bookings';
-    await queryInterface.dropTable(options);
+    await queryInterface.dropTable('Bookings');
   }
 };

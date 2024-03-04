@@ -1,29 +1,52 @@
 'use strict';
-const { Model, DataTypes } = require('sequelize');
+const { Model } = require('sequelize');
 
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   class Spot extends Model {
     static associate(models) {
-      Spot.belongsTo(models.User, { foreignKey: 'ownerId', as: 'owner' });
-      Spot.hasMany(models.Review, { foreignKey: 'spotId', as: 'reviews' });
-      Spot.hasMany(models.Booking, { foreignKey: 'spotId', as: 'bookings' });
-      Spot.hasMany(models.SpotImage, { foreignKey: 'spotId', as: 'spotImages' });
+      // association with User model (a Spot belongs to a User)
+      Spot.belongsTo(models.User, { foreignKey: 'ownerId', as: 'Owner' });
+
+      // association with Image model (a Spot can have many Images)
+      Spot.hasMany(models.SpotImage, { foreignKey: 'spotId', as: 'SpotImage' });
+
+      // association with Review model (a Spot can have many Reviews)
+      Spot.hasMany(models.Review, { foreignKey: 'spotId', as: 'Reviews' });
     }
   }
+
   Spot.init({
-    ownerId: DataTypes.INTEGER,
+    ownerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: 'Users', key: 'id' }
+    },
     address: DataTypes.STRING,
     city: DataTypes.STRING,
     state: DataTypes.STRING,
     country: DataTypes.STRING,
     lat: DataTypes.FLOAT,
     lng: DataTypes.FLOAT,
-    name: DataTypes.STRING,
-    description: DataTypes.TEXT,
-    price: DataTypes.FLOAT
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false
+    },
+    price: {
+      type: DataTypes.FLOAT,
+      allowNull: false
+    },
+    avgRating: {
+      type: DataTypes.FLOAT,
+    },
+    previewImage: DataTypes.STRING 
   }, {
     sequelize,
     modelName: 'Spot',
   });
+
   return Spot;
 };
