@@ -8,7 +8,7 @@ const { handleValidationErrors } = require('../../utils/validation');
 
 const router = express.Router();
 
-// Define validateLogin before using it in the route
+// define validateLogin before using it in the route
 const validateLogin = [
     check('credential')
       .exists({ checkFalsy: true })
@@ -20,7 +20,7 @@ const validateLogin = [
     handleValidationErrors
 ];
 
-// Log in
+// log in
 router.post(
     '/',
     validateLogin, 
@@ -60,13 +60,13 @@ router.post(
     }
 );
 
-// Log out
+// log out
 router.delete('/', (_req, res) => {
     res.clearCookie('token');
     return res.json({ message: 'success' });
 });
 
-// Restore session user
+// restore session user
 router.get('/', restoreUser, (req, res) => {
     const { user } = req;
     if (user) {
