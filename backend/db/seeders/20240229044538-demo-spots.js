@@ -2,7 +2,16 @@
 
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.bulkInsert('Spots', [
+    let options = {};
+    
+    if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+      options.schema = process.env.SCHEMA; 
+    }
+
+    await queryInterface.bulkInsert({
+      tableName: 'Spots',
+      ...options
+    }, [
       {
         ownerId: 1, 
         address: '1234 Sandhu St',
@@ -31,11 +40,19 @@ module.exports = {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-      
-    ], {});
+    ]);
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('Spots', null, {});
+    let options = {};
+    
+    if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+      options.schema = process.env.SCHEMA;
+    }
+
+    return queryInterface.bulkDelete({
+      tableName: 'Spots',
+      ...options
+    }, null, {});
   }
 };

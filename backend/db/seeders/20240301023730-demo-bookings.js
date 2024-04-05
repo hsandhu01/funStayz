@@ -2,7 +2,16 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.bulkInsert('Bookings', [
+    let options = {};
+  
+    if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+      options.schema = process.env.SCHEMA;
+    }
+
+    await queryInterface.bulkInsert({
+      tableName: 'Bookings',
+      ...options
+    }, [
       {
         userId: 1, 
         spotId: 1,
@@ -18,12 +27,20 @@ module.exports = {
         endDate: new Date(new Date().setDate(new Date().getDate() + 15)), 
         createdAt: new Date(),
         updatedAt: new Date()
-      },
-     
-    ], {});
+      }
+    ]);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.bulkDelete('Bookings', null, {});
+    let options = {};
+    
+    if (process.env.NODE_ENV === 'production' && process.env.SCHEMA) {
+      options.schema = process.env.SCHEMA;
+    }
+
+    return queryInterface.bulkDelete({
+      tableName: 'Bookings',
+      ...options
+    }, null, {});
   }
 };
