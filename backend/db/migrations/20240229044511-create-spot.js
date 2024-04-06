@@ -42,7 +42,8 @@ module.exports = {
         type: Sequelize.TEXT
       },
       price: {
-        type: Sequelize.DECIMAL
+        type: Sequelize.DECIMAL,
+        allowNull: false
       },
       avgRating: {
         type: Sequelize.DECIMAL,

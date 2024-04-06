@@ -36,8 +36,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     price: {
-      type: DataTypes.FLOAT,
-      allowNull: false
+      type: DataTypes.DECIMAL,
+      allowNull: false,
+      validate: {
+        min: 0,
+      }
     },
     avgRating: {
       type: DataTypes.FLOAT,
