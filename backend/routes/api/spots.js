@@ -1,101 +1,102 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const { Spot, SpotImage, Review, User, Booking } = require('../../db/models'); 
-const { requireAuth , restoreUser} = require('../../utils/auth'); 
+const { Spot, SpotImage, Review, User, Booking } = require('../../db/models');
+const { requireAuth, restoreUser } = require('../../utils/auth');
 const { handleValidationErrors } = require('../../utils/validation');
 const { Op } = require('sequelize');
 
-
 const validateSpot = [
-  check('address')
-    .exists({ checkFalsy: true })
-    .withMessage('Street address is required'),
-  check('city')
-    .exists({ checkFalsy: true })
-    .withMessage('City is required'),
-  check('state')
-    .exists({ checkFalsy: true })
-    .withMessage('State is required'),
-  check('country')
-    .exists({ checkFalsy: true })
-    .withMessage('Country is required'),
-  check('lat')
-    .exists({ checkFalsy: true })
-    .withMessage('Latitude is required')
-    .isFloat({ min: -90, max: 90 })
-    .withMessage('Latitude must be within -90 and 90'),
-  check('lng')
-    .exists({ checkFalsy: true })
-    .withMessage('Longitude is required')
-    .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be within -180 and 180'),
-  check('name')
-    .optional()
-    .isLength({ max: 50 })
-    .withMessage('Name must be less than 50 characters'),
-  check('description')
-    .exists({ checkFalsy: true })
-    .withMessage('Description is required'),
-  check('price')
-    .exists({ checkFalsy: true })
-    .withMessage('Price per day is required')
-    .isFloat({ min: 0 })
-    .withMessage('Price per day must be a positive number'),
+    check('address')
+        .exists({ checkFalsy: true })
+        .withMessage('Street address is required'),
+    check('city')
+        .exists({ checkFalsy: true })
+        .withMessage('City is required'),
+    check('state')
+        .exists({ checkFalsy: true })
+        .withMessage('State is required'),
+    check('country')
+        .exists({ checkFalsy: true })
+        .withMessage('Country is required'),
+    check('lat')
+        .exists({ checkFalsy: true })
+        .withMessage('Latitude is required')
+        .isFloat({ min: -90, max: 90 })
+        .withMessage('Latitude must be within -90 and 90'),
+    check('lng')
+        .exists({ checkFalsy: true })
+        .withMessage('Longitude is required')
+        .isFloat({ min: -180, max: 180 })
+        .withMessage('Longitude must be within -180 and 180'),
+    check('name')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('Name must be less than 50 characters'),
+    check('description')
+        .exists({ checkFalsy: true })
+        .withMessage('Description is required'),
+    check('price')
+        .exists({ checkFalsy: true })
+        .withMessage('Price per day is required')
+        .isFloat({ min: 0 })
+        .withMessage('Price per day must be a positive number'),
     handleValidationErrors,
 ];
 
 const validateReview = [
-  check('review')
-    .exists({ checkFalsy: true })
-    .withMessage('Review text is required'),
-  check('stars')
-    .exists({ checkFalsy: true })
-    .withMessage('Stars are required')
-    .isInt({ min: 1, max: 5 })
-    .withMessage('Stars must be an integer from 1 to 5'),
-    handleValidationErrors
+    check('review')
+        .exists({ checkFalsy: true })
+        .withMessage('Review text is required'),
+    check('stars')
+        .exists({ checkFalsy: true })
+        .withMessage('Stars are required')
+        .isInt({ min: 1, max: 5 })
+        .withMessage('Stars must be an integer from 1 to 5'),
+    handleValidationErrors,
 ];
-
 
 const validateBooking = [
-  check('startDate')
-  .exists({ checkFalsy: true })
-  .withMessage('Start date is required')
-  .isISO8601('yyyy-mm-dd')
-  .withMessage('startDate must be a valid date')
-  .custom((startDate, { req }) => {
-    const start = new Date(startDate)
-
-    if (start < new Date()) {
-        throw new Error('startDate cannot be in the past');
-    }
-    return true;
-}),
-check('endDate')
-  .exists({ checkFalsy: true })
-  .withMessage('End date is required')
-  .isISO8601('yyyy-mm-dd')
-  .withMessage('endDate must be a valid date')
-  .custom((endDate, { req }) => {
-    const end = new Date(endDate);
-    const start = new Date(req.body.startDate);
-
-    if (end <= start) {
-        throw new Error('endDate cannot be on or before start date');
-    }
-    return true;
-}),
-  handleValidationErrors
+    check('startDate')
+        .exists({ checkFalsy: true })
+        .withMessage('Start date is required')
+        .isISO8601('yyyy-mm-dd')
+        .withMessage('startDate must be a valid date')
+        .custom((startDate, { req }) => {
+            const start = new Date(startDate);
+            if (start < new Date()) {
+                throw new Error('startDate cannot be in the past');
+            }
+            return true;
+        }),
+    check('endDate')
+        .exists({ checkFalsy: true })
+        .withMessage('End date is required')
+        .isISO8601('yyyy-mm-dd')
+        .withMessage('endDate must be a valid date')
+        .custom((endDate, { req }) => {
+            const end = new Date(endDate);
+            const start = new Date(req.body.startDate);
+            if (end <= start) {
+                throw new Error('endDate cannot be on or before start date');
+            }
+            return true;
+        }),
+    handleValidationErrors,
 ];
 
+// Format dates
+const formatDate = (date) => {
+    if (!date) return null; // Guard against null values
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+};
 
-
-// for the rating
+// For the rating
 const getAverageRating = (reviews) => {
-  if (reviews.length === 0) return 0;
-  const sum = reviews.reduce((acc, { rating }) => acc + rating, 0);
-  return (sum / reviews.length).toFixed(2);
+    if (reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, { rating }) => acc + rating, 0);
+    return (sum / reviews.length).toFixed(2);
 };
 
 // get all spots
