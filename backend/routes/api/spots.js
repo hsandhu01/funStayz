@@ -178,7 +178,7 @@ router.get('/:spotId/reviews', async (req, res, next) => {
     // Find all reviews for the spot
     const reviews = await Review.findAll({ where: { spotId } });
     
-    // Return the reviews
+    // return the reviews
     res.json(reviews);
   } catch (error) {
     next(error);
@@ -188,10 +188,10 @@ router.get('/:spotId/reviews', async (req, res, next) => {
 
 router.get('/:spotId/bookings', restoreUser, requireAuth, async (req, res) => {
   const spotId = req.params.spotId;
-  const userId = req.user.id; // Get the ID of the authenticated user
+  const userId = req.user.id; // get the ID of the authenticated user
 
   try {
-    // Retrieve all bookings associated with the spotId
+    // retrieve all bookings associated with the spotId
     const bookings = await Booking.findAll({ where: { spotId: spotId } });
 
     // If there are no bookings found, return a 404 status with a corresponding message
@@ -365,6 +365,61 @@ const spot = await Spot.findByPk(req.params.spotId);
 if (!spot) {
 return res.status(404).json({ message: "Spot couldn't be found" });
 }
+
+// del spot img
+router.delete('/spot-images/:imageId', requireAuth, async (req, res) => {
+  const { imageId } = req.params;
+  const image = await SpotImage.findByPk(imageId);
+
+  if (!image) {
+    return res.status(404).json({ message: "Spot Image couldn't be found." });
+  }
+
+  // make sure current user owns the spot associated with the image
+  const spot = await Spot.findByPk(image.spotId);
+  if (!spot || req.user.id !== spot.ownerId) {
+    return res.status(403).json({ message: "Forbidden. You don't have permission to delete this image." });
+  }
+
+  await image.destroy();
+  res.json({ message: "Image successfully deleted." });
+});
+
+// del review img
+router.delete('/review-images/:imageId', requireAuth, async (req, res) => {
+  const { imageId } = req.params;
+  const image = await ReviewImage.findByPk(imageId);
+
+  if (!image) {
+      return res.status(404).json({ message: "Review Image couldn't be found." });
+  }
+
+  const review = await Review.findByPk(image.reviewId);
+  if (!review || req.user.id !== review.userId) {
+      return res.status(403).json({ message: "Forbidden. You don't have permission to delete this image." });
+  }
+
+  await image.destroy();
+  res.json({ message: "Image successfully deleted." });
+});
+
+// del a booking
+router.delete('/bookings/:bookingId', requireAuth, async (req, res) => {
+  const { bookingId } = req.params;
+  const booking = await Booking.findByPk(bookingId);
+
+  if (!booking) {
+      return res.status(404).json({ message: "Booking couldn't be found." });
+  }
+
+  const spot = await Spot.findByPk(booking.spotId);
+  if (req.user.id !== booking.userId && (!spot || req.user.id !== spot.ownerId)) {
+      return res.status(403).json({ message: "Forbidden. You don't have permission to delete this booking." });
+  }
+
+  await booking.destroy();
+  res.json({ message: "Booking successfully deleted." });
+});
 
 // check on spots
 
