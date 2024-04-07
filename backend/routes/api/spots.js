@@ -164,37 +164,38 @@ router.get('/current', restoreUser, requireAuth, async (req, res) => {
 // Get spot details from id
 router.get('/:spotId', async (req, res, next) => {
   const spot = await Spot.findByPk(req.params.spotId, {
-      attributes: ['id', 'ownerId', 'address', 'city', 'state', 'country', 'lat', 'lng', 'name', 'description', 'price', 'createdAt', 'updatedAt'],
-      include: [
-          {
-              model: Review,
-              as: 'Reviews',
-              attributes: [],
-          },
-          {
-              model: SpotImage,
-              as: 'SpotImages',
-              attributes: ['id', 'url', 'preview'],
-          },
-          {
-              model: User,
-              as: 'Owner',
-              attributes: ['id', 'firstName', 'lastName'],
-          },
-      ],
+    include: [
+      {
+        model: Review,
+        as: 'Reviews',
+        attributes: []
+      },
+      {
+        model: SpotImage,
+        as: 'SpotImages', 
+        attributes: ['id', 'url', 'preview']
+      },
+      {
+        model: User,
+        as: 'Owner',
+        attributes: ['id', 'firstName', 'lastName']
+      }
+    ]
   });
 
   if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+    return res.status(404).json({ message: "Spot couldn't be found" });
   }
 
+  // calculate average star rating and number of reviews
   const responseData = spot.toJSON();
-  responseData.numReviews = await Review.count({ where: { spotId: spot.id } });
-  responseData.avgStarRating = await Review.findOne({
-      attributes: [[sequelize.fn('AVG', sequelize.col('stars')), 'avgRating']],
-      where: { spotId: spot.id },
-      raw: true,
-  }).then((result) => result.avgRating);
+  const reviews = await spot.getReviews();
+  responseData.avgStarRating = getAverageRating(reviews);
+  responseData.numReviews = reviews.length;
+  
+  // remove unwanted properties
+  delete responseData.previewImage; // adding these for when i do frontend
+  delete responseData.avgRating; // added for when i do frontend
 
   res.json(responseData);
 });
@@ -380,18 +381,23 @@ router.put('/:spotId', restoreUser, requireAuth, validateSpot, async (req, res, 
   const spot = await Spot.findByPk(req.params.spotId);
 
   if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+    return res.status(404).json({ message: "Spot couldn't be found" });
   }
 
   if (spot.ownerId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
+    return res.status(403).json({ message: "Forbidden" });
   }
 
   try {
-      await spot.update({ address, city, state, country, lat, lng, name, description, price });
-      res.json(spot);
+    await spot.update({ address, city, state, country, lat, lng, name, description, price });
+    const updatedSpot = await Spot.findByPk(req.params.spotId, {
+      attributes: {
+        exclude: ['createdAt', 'updatedAt', 'avgRating', 'previewImage'] // Exclude unwanted properties
+      }
+    });
+    res.json(updatedSpot);
   } catch (error) {
-      next(error);
+    next(error);
   }
 });
 
@@ -401,11 +407,11 @@ router.delete('/:spotId', restoreUser, requireAuth, async (req, res) => {
   const spot = await Spot.findByPk(spotId);
 
   if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+    return res.status(404).json({ message: "Spot couldn't be found" });
   }
 
   if (spot.ownerId !== req.user.id) {
-      return res.status(403).json({ message: "Forbidden" });
+    return res.status(403).json({ message: "Forbidden" });
   }
 
   await spot.destroy();
@@ -446,6 +452,43 @@ router.delete('/review-images/:imageId', requireAuth, async (req, res) => {
 
   await image.destroy();
   res.json({ message: "Successfully deleted" });
+});
+
+// Get all spots with optional query parameters
+router.get('/', async (req, res, next) => {
+  const { page = 1, size = 20, minLat, maxLat, minLng, maxLng, minPrice, maxPrice } = req.query;
+
+  // page and size
+  const limit = parseInt(size, 10);
+  const offset = (page - 1) * limit;
+
+  // filtering
+  const where = {};
+  if (minLat) where.lat = { [Op.gte]: parseFloat(minLat) };
+  if (maxLat) where.lat = { ...where.lat, [Op.lte]: parseFloat(maxLat) };
+  if (minLng) where.lng = { [Op.gte]: parseFloat(minLng) };
+  if (maxLng) where.lng = { ...where.lng, [Op.lte]: parseFloat(maxLng) };
+  if (minPrice) where.price = { [Op.gte]: parseFloat(minPrice) };
+  if (maxPrice) where.price = { ...where.price, [Op.lte]: parseFloat(maxPrice) };
+
+  try {
+    
+    const spots = await Spot.findAll({ where, limit, offset });
+
+    res.json({
+      Spots: spots,
+      page: parseInt(page, 10),
+      size: limit,
+    });
+  } catch (error) {
+    // should send out a 400 with status error
+    res.status(400).json({
+      message: "Bad Request",
+      errors: {
+        ...error.errors
+      }
+    });
+  }
 });
 
 module.exports = router;
