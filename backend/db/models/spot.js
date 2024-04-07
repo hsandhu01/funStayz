@@ -1,6 +1,5 @@
 'use strict';
 const { Model } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
   class Spot extends Model {
     static associate(models) {
@@ -8,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       Spot.belongsTo(models.User, { foreignKey: 'ownerId', as: 'Owner' });
 
       // association with Image model (a Spot can have many Images)
-      Spot.hasMany(models.SpotImage, { foreignKey: 'spotId', as: 'SpotImage' });
+      Spot.hasMany(models.SpotImage, { foreignKey: 'spotId', as: 'SpotImages' });
 
       // association with Review model (a Spot can have many Reviews)
       Spot.hasMany(models.Review, { foreignKey: 'spotId', as: 'Reviews' });
@@ -19,33 +18,50 @@ module.exports = (sequelize, DataTypes) => {
     ownerId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'Users', key: 'id' }
+      references: { model: 'Users', key: 'id' },
     },
-    address: DataTypes.STRING,
-    city: DataTypes.STRING,
-    state: DataTypes.STRING,
-    country: DataTypes.STRING,
-    lat: DataTypes.FLOAT,
-    lng: DataTypes.FLOAT,
+    address: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    state: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    country: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    lat: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    lng: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
     name: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        len: [1, 50],
+      },
     },
     description: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: false,
     },
     price: {
       type: DataTypes.DECIMAL,
       allowNull: false,
       validate: {
         min: 0,
-      }
+      },
     },
-    avgRating: {
-      type: DataTypes.FLOAT,
-    },
-    previewImage: DataTypes.STRING 
   }, {
     sequelize,
     modelName: 'Spot',

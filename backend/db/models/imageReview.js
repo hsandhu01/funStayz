@@ -1,20 +1,13 @@
 'use strict';
-
-const { Model, Validator } = require('sequelize')
-
+const { Model, Validator } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class ReviewImage extends Model {
     static associate(models) {
-      // association with User model (a Spot belongs to a User)
-      ReviewImage.belongsTo(models.Review, { foreignKey: 'reviewId'});
-
-      // // User can have many Spots
-      // User.hasMany(models.Spot, { foreignKey: 'ownerId', as: 'Spots' });
-      // // User can have many Reviews
-      // User.hasMany(models.Review, { foreignKey: 'userId', as: 'Reviews' });
+     
+      ReviewImage.belongsTo(models.Review, { foreignKey: 'reviewId' });
     }
-  };
+  }
 
   ReviewImage.init(
     {
@@ -22,18 +15,21 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'Review',
-          key: 'id'
-        }
+          model: 'Reviews',
+          key: 'id',
+        },
       },
       url: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        validate: {
+          isUrl: true,
+        },
       },
     },
     {
       sequelize,
-      modelName: 'ReviewImage'
+      modelName: 'ReviewImage',
     }
   );
 
