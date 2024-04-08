@@ -141,33 +141,30 @@ router.get('/', async (req, res, next) => {
 router.get('/current', requireAuth, async (req, res) => {
   const currentUserId = req.user.id;
   const spots = await Spot.findAll({
-    where: { ownerId: currentUserId },
-    include: [{
-      model: Review,
-      attributes: [],
-    }, {
-      model: SpotImage,
-      attributes: [],
-      where: { preview: true },
-      required: false,
-    }],
-    attributes: {
-      include: [
-        [sequelize.fn("AVG", sequelize.col("Reviews.stars")), "avgStarRating"],
-        [sequelize.literal(`(
-            SELECT url FROM SpotImages
-            WHERE SpotImages.spotId = Spot.id AND SpotImages.preview = true
-            LIMIT 1
-        )`), "previewImage"]
-      ]
-    },
-    group: ['Spot.id']
+      where: { ownerId: currentUserId },
+      include: [{
+          model: SpotImage,
+          attributes: [],
+          where: { preview: true },
+          required: false,
+      }],
+      attributes: {
+          include: [
+              [sequelize.fn("AVG", sequelize.col("Reviews.stars")), "avgStarRating"],
+              [sequelize.literal(`(
+                  SELECT url FROM SpotImages
+                  WHERE SpotImages.spotId = Spot.id AND SpotImages.preview = true
+                  LIMIT 1
+              )`), "previewImage"]
+          ]
+      },
+      group: ['Spot.id']
   });
 
   const modifiedSpots = spots.map(spot => ({
-    ...spot.toJSON(),
-    avgStarRating: parseFloat(spot.avgStarRating).toFixed(2),
-    previewImage: spot.previewImage || "Default image URL or null",
+      ...spot.toJSON(),
+      avgStarRating: spot.avgStarRating ? parseFloat(spot.avgStarRating).toFixed(2) : "0.00",
+      previewImage: spot.previewImage || "Default image URL or null", 
   }));
 
   res.json({ Spots: modifiedSpots });
