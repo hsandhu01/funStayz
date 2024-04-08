@@ -138,121 +138,105 @@ router.get('/', async (req, res, next) => {
 });
 
 // Get spots owned by user
-router.get('/current', restoreUser, requireAuth, async (req, res) => {
+router.get('/current', requireAuth, async (req, res) => {
   const currentUserId = req.user.id;
-  const ownerSpots = await Spot.findAll({
-      where: { ownerId: currentUserId },
-      attributes: ['id', 'ownerId', 'address', 'city', 'state', 'country', 'lat', 'lng', 'name', 'description', 'price', 'createdAt', 'updatedAt'],
+  const spots = await Spot.findAll({
+    where: { ownerId: currentUserId },
+    include: [{
+      model: Review,
+      attributes: [],
+    }, {
+      model: SpotImage,
+      attributes: [],
+      where: { preview: true },
+      required: false,
+    }],
+    attributes: {
       include: [
-          {
-              model: SpotImage,
-              as: 'previewImage',
-              attributes: ['url'],
-              limit: 1,
-          },
-      ],
+        [sequelize.fn("AVG", sequelize.col("Reviews.stars")), "avgStarRating"],
+        [sequelize.literal(`(
+            SELECT url FROM SpotImages
+            WHERE SpotImages.spotId = Spot.id AND SpotImages.preview = true
+            LIMIT 1
+        )`), "previewImage"]
+      ]
+    },
+    group: ['Spot.id']
   });
 
-  const formattedSpots = ownerSpots.map((spot) => ({
-      ...spot.toJSON(),
-      previewImage: spot.previewImage ? spot.previewImage.url : null,
+  const modifiedSpots = spots.map(spot => ({
+    ...spot.toJSON(),
+    avgStarRating: parseFloat(spot.avgStarRating).toFixed(2),
+    previewImage: spot.previewImage || "Default image URL or null",
   }));
 
-  res.json({ Spots: formattedSpots });
+  res.json({ Spots: modifiedSpots });
 });
 
 // Get spot details from id
-router.get('/:spotId', async (req, res, next) => {
+router.get('/:spotId', async (req, res) => {
   const spot = await Spot.findByPk(req.params.spotId, {
     include: [
-      {
-        model: Review,
-        as: 'Reviews',
-        attributes: []
-      },
-      {
-        model: SpotImage,
-        as: 'SpotImages', 
-        attributes: ['id', 'url', 'preview']
-      },
-      {
-        model: User,
-        as: 'Owner',
-        attributes: ['id', 'firstName', 'lastName']
-      }
-    ]
+      { model: User, as: 'Owner', attributes: ['id', 'firstName', 'lastName'] },
+      { model: SpotImage, as: 'SpotImages', attributes: ['id', 'url', 'preview'] }
+    ],
+    attributes: {
+      include: [[sequelize.fn("AVG", sequelize.col("Reviews.stars")), "avgStarRating"]]
+    },
+    group: ['Spot.id', 'Owner.id', 'SpotImages.id']
   });
 
   if (!spot) {
     return res.status(404).json({ message: "Spot couldn't be found" });
   }
 
-  // calculate average star rating and number of reviews
-  const responseData = spot.toJSON();
-  const reviews = await spot.getReviews();
-  responseData.avgStarRating = getAverageRating(reviews);
-  responseData.numReviews = reviews.length;
-  
-  // remove unwanted properties
-  delete responseData.previewImage; // adding these for when i do frontend
-  delete responseData.avgRating; // added for when i do frontend
-
-  res.json(responseData);
+  const spotDetail = spot.toJSON();
+  spotDetail.avgStarRating = spotDetail.avgStarRating ? parseFloat(spotDetail.avgStarRating).toFixed(2) : null;
+  res.json(spotDetail);
 });
 
 // Get all reviews by spot id
-router.get('/:spotId/reviews', async (req, res, next) => {
-  const { spotId } = req.params;
+router.post('/:spotId/reviews', requireAuth, async (req, res) => {
+  const { review, stars } = req.body;
+  const userId = req.user.id;
+  const spotId = req.params.spotId;
 
-  const spot = await Spot.findByPk(spotId);
-  if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+  const existingReview = await Review.findOne({ where: { userId, spotId } });
+  if (existingReview) {
+    return res.status(403).json({ message: "User has already reviewed this spot" });
   }
 
-  const reviews = await Review.findAll({
-      where: { spotId },
-      include: [
-          {
-              model: User,
-              attributes: ['id', 'firstName', 'lastName'],
-          },
-          {
-              model: ReviewImage,
-              attributes: ['id', 'url'],
-          },
-      ],
-  });
-
-  res.json({ Reviews: reviews });
+  const newReview = await Review.create({ userId, spotId, review, stars });
+  res.status(201).json(newReview);
 });
 
 // Get all bookings for a spot by id
-router.get('/:spotId/bookings', restoreUser, requireAuth, async (req, res) => {
+router.post('/:spotId/bookings', requireAuth, async (req, res) => {
+  const { startDate, endDate } = req.body;
   const spotId = req.params.spotId;
-  const userId = req.user.id;
 
-  const spot = await Spot.findByPk(spotId);
-  if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+  // date validation logic
+  const overlappingBookings = await Booking.findAll({
+    where: {
+      spotId,
+      [Op.or]: [
+        {
+          [Op.and]: [
+            { startDate: { [Op.lt]: endDate } },
+            { endDate: { [Op.gt]: startDate } },
+          ]
+        }
+      ]
+    }
+  });
+
+  if (overlappingBookings.length > 0) {
+    return res.status(403).json({ message: "Spot is already booked for the given dates" });
   }
 
-  let bookings;
-  if (spot.ownerId === userId) {
-      bookings = await Booking.findAll({
-          where: { spotId },
-          include: {
-              model: User,
-              attributes: ['id', 'firstName', 'lastName'],
-          },
-      });
-  } else {
-      bookings = await Booking.findAll({
-          where: { spotId },
-          attributes: ['spotId', 'startDate', 'endDate'],
-      });
-  }
-
-  res.json({ Bookings: bookings });
+  // booking creation
+  const newBooking = await Booking.create({ userId: req.user.id, spotId, startDate, endDate });
+  res.json(newBooking);
 });
 
 // Create a spot
@@ -280,30 +264,18 @@ router.post('/', restoreUser, requireAuth, validateSpot, async (req, res, next) 
 });
 
 // Add an image to a spot
-router.post('/:spotId/images', restoreUser, requireAuth, async (req, res, next) => {
+router.post('/:spotId/images', requireAuth, async (req, res) => {
   const { url, preview } = req.body;
-  const { spotId } = req.params;
   const userId = req.user.id;
+  const spotId = req.params.spotId;
 
   const spot = await Spot.findByPk(spotId);
-  if (!spot) {
-      return res.status(404).json({ message: "Spot couldn't be found" });
+  if (!spot || spot.ownerId !== userId) {
+    return res.status(403).json({ message: "User is not authorized to add images to this spot" });
   }
 
-  if (spot.ownerId !== userId) {
-      return res.status(403).json({ message: "Forbidden" });
-  }
-
-  try {
-      const image = await SpotImage.create({ spotId, url, preview });
-      res.json({
-          id: image.id,
-          url: image.url,
-          preview: image.preview,
-      });
-  } catch (error) {
-      next(error);
-  }
+  const newImage = await SpotImage.create({ spotId, url, preview });
+  res.json({ id: newImage.id, url: newImage.url, preview: newImage.preview });
 });
 
 // Create a review for a spot
@@ -376,29 +348,42 @@ router.post('/:spotId/bookings', restoreUser, requireAuth, validateBooking, asyn
 });
 
 // Edit a spot
-router.put('/:spotId', restoreUser, requireAuth, validateSpot, async (req, res, next) => {
-  const { address, city, state, country, lat, lng, name, description, price } = req.body;
-  const spot = await Spot.findByPk(req.params.spotId);
+router.get('/:spotId', async (req, res) => {
+  const spotId = req.params.spotId;
+  const spot = await Spot.findByPk(spotId, {
+      include: [{
+          model: SpotImage,
+          as: 'SpotImages', 
+          attributes: ['id', 'url', 'preview']
+      }, {
+          model: Review,
+          attributes: []
+      }, {
+          model: User,
+          as: 'Owner',
+          attributes: ['id', 'firstName', 'lastName']
+      }]
+  });
 
   if (!spot) {
-    return res.status(404).json({ message: "Spot couldn't be found" });
+      return res.status(404).json({ message: "Spot couldn't be found" });
   }
 
-  if (spot.ownerId !== req.user.id) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
+  // Adding average star rating
+  const reviews = await spot.getReviews({
+      attributes: [[sequelize.fn('AVG', sequelize.col('stars')), 'avgStarRating']],
+      raw: true,
+  });
 
-  try {
-    await spot.update({ address, city, state, country, lat, lng, name, description, price });
-    const updatedSpot = await Spot.findByPk(req.params.spotId, {
-      attributes: {
-        exclude: ['createdAt', 'updatedAt', 'avgRating', 'previewImage'] // Exclude unwanted properties
-      }
-    });
-    res.json(updatedSpot);
-  } catch (error) {
-    next(error);
-  }
+  // api specs
+  const spotData = spot.toJSON(); // Convert Sequelize model instance to JSON
+  spotData.avgStarRating = parseFloat(reviews[0].avgStarRating).toFixed(2) || "0.00"; // Ensure string format
+  spotData.SpotImages = spotData.SpotImages.map(({ id, url, preview }) => ({ id, url, preview })); // Restructure SpotImages
+
+  // rmv unwanted properties
+  delete spotData.previewImage; 
+
+  res.json(spotData);
 });
 
 // Delete a spot
