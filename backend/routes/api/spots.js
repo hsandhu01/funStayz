@@ -103,63 +103,78 @@ const getAverageRating = (reviews) => {
 };
 
 // Get all spots
-router.get('/', async (req, res, next) => {
+router.get('/', async (req, res) => {
   const { page = 1, size = 20, minLat, maxLat, minLng, maxLng, minPrice, maxPrice } = req.query;
-
   const errors = {};
 
+  // Validate query parameters
   if (page < 1 || isNaN(page)) {
     errors.page = "Page must be greater than or equal to 1";
   }
-
   if (size < 1 || isNaN(size)) {
     errors.size = "Size must be greater than or equal to 1";
   }
-
   if (maxLat && isNaN(maxLat)) {
     errors.maxLat = "Maximum latitude is invalid";
   }
-
   if (minLat && isNaN(minLat)) {
     errors.minLat = "Minimum latitude is invalid";
   }
-
   if (minLng && isNaN(minLng)) {
     errors.minLng = "Minimum longitude is invalid";
   }
-
   if (maxLng && isNaN(maxLng)) {
     errors.maxLng = "Maximum longitude is invalid";
   }
-
   if (minPrice && (isNaN(minPrice) || minPrice < 0)) {
     errors.minPrice = "Minimum price must be greater than or equal to 0";
   }
-
   if (maxPrice && (isNaN(maxPrice) || maxPrice < 0)) {
     errors.maxPrice = "Maximum price must be greater than or equal to 0";
   }
 
   if (Object.keys(errors).length > 0) {
-    return res.status(400).json({
-      message: "Bad Request",
-      errors: errors,
-    });
+    return res.status(400).json({ message: "Bad Request", errors });
   }
 
   try {
+    const pagination = { offset: (page - 1) * size, limit: size };
+    const where = {};
+
+    // Add filtering conditions to the where clause
+    if (minLat && maxLat) {
+      where.lat = { [Op.between]: [minLat, maxLat] };
+    } else {
+      if (minLat) where.lat = { [Op.gte]: minLat };
+      if (maxLat) where.lat = { [Op.lte]: maxLat };
+    }
+
+    if (minLng && maxLng) {
+      where.lng = { [Op.between]: [minLng, maxLng] };
+    } else {
+      if (minLng) where.lng = { [Op.gte]: minLng };
+      if (maxLng) where.lng = { [Op.lte]: maxLng };
+    }
+
+    if (minPrice && maxPrice) {
+      where.price = { [Op.between]: [minPrice, maxPrice] };
+    } else {
+      if (minPrice) where.price = { [Op.gte]: minPrice };
+      if (maxPrice) where.price = { [Op.lte]: maxPrice };
+    }
+
     const spots = await Spot.findAll({
       include: [
         {
           model: Review,
-          as: 'Reviews', 
+          as: 'Reviews',
           attributes: []
         },
         {
           model: SpotImage,
-          as: 'SpotImages', 
-          attributes: [],
-          where: { preview: true }, 
+          as: 'SpotImages',
+          attributes: ['url'],
+          where: { preview: true },
           required: false
         }
       ],
@@ -175,18 +190,10 @@ router.get('/', async (req, res, next) => {
       subQuery: false
     });
 
-    res.json({
-      Spots: spots,
-      page,
-      size
-    });
+    res.status(200).json({ Spots: spots, page, size });
   } catch (error) {
-    res.status(400).json({
-      message: "Bad Request",
-      errors: {
-        ...error.errors
-      }
-    });
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
