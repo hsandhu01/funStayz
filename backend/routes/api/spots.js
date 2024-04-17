@@ -14,22 +14,16 @@ const validateSpot = [
   check('city')
     .exists({ checkFalsy: true })
     .withMessage('City is required'),
-  check('state')
-    .exists({ checkFalsy: true })
-    .withMessage('State is required'),
-  check('country')
-    .exists({ checkFalsy: true })
-    .withMessage('Country is required'),
   check('lat')
     .exists({ checkFalsy: true })
     .withMessage('Latitude is required')
     .isFloat({ min: -90, max: 90 })
-    .withMessage('Latitude must be within -90 and 90'),
+    .withMessage('Latitude must be between -90 and 90'),
   check('lng')
     .exists({ checkFalsy: true })
     .withMessage('Longitude is required')
     .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be within -180 and 180'),
+    .withMessage('Longitude must be between -180 and 180'),
   check('name')
     .optional()
     .isLength({ max: 50 })
@@ -88,7 +82,7 @@ const validateBooking = [
 
 // format dates
 const formatDate = (date) => {
-  if (!date) return null; // Guard against null values
+  if (!date) return null;
   const d = new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 };
@@ -235,26 +229,26 @@ router.get('/:spotId', async (req, res) => {
       {
         model: Review,
         as: 'Reviews',
-        attributes: []
+        attributes: [],
       },
       {
         model: SpotImage,
-        as: 'SpotImages', 
-        attributes: ['id', 'url', 'preview']
+        as: 'SpotImages',
+        attributes: ['id', 'url', 'preview'],
       },
       {
         model: User,
         as: 'Owner',
-        attributes: ['id', 'firstName', 'lastName']
-      }
+        attributes: ['id', 'firstName', 'lastName'],
+      },
     ],
     attributes: {
       include: [
         [sequelize.fn('COUNT', sequelize.col('Reviews.id')), 'numReviews'],
-        [sequelize.fn('AVG', sequelize.col('Reviews.stars')), 'avgStarRating']
-      ]
+        [sequelize.fn('AVG', sequelize.col('Reviews.stars')), 'avgStarRating'],
+      ],
     },
-    group: ['Spot.id', 'SpotImages.id', 'Owner.id']
+    group: ['Spot.id', 'SpotImages.id', 'Owner.id'],
   });
 
   if (!spot) {
@@ -310,7 +304,7 @@ router.post('/:spotId/images', requireAuth, async (req, res) => {
   res.json({
     id: image.id,
     url: image.url,
-    preview: image.preview
+    preview: image.preview,
   });
 });
 
@@ -339,7 +333,7 @@ router.put('/:spotId', requireAuth, validateSpot, async (req, res) => {
     lng,
     name,
     description,
-    price
+    price,
   });
 
   res.json(spot);
