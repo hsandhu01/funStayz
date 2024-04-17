@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const { Spot, SpotImage, Review, User, Booking, ReviewImage } = require('../../db/models');
-const { requireAuth, restoreUser } = require('../../utils/auth');
+const { requireAuth } = require('../../utils/auth');
 const { handleValidationErrors } = require('../../utils/validation');
 const { Op } = require('sequelize');
 const { sequelize } = require('../../db/models');
@@ -184,7 +184,7 @@ router.get('/', async (req, res) => {
           [sequelize.col('SpotImages.url'), 'previewImage']
         ]
       },
-      group: ['Spot.id', 'SpotImages.url'],
+      group: ['Spot.id', 'SpotImages.url'], 
       subQuery: false
     });
 
@@ -227,8 +227,9 @@ router.get('/current', requireAuth, async (req, res) => {
   res.json({ Spots: spots });
 });
 
+
 // Get details of a spot from an id
-router.get('/:spotId', async (req, res, next) => {
+router.get('/:spotId', async (req, res) => {
   const spot = await Spot.findByPk(req.params.spotId, {
     include: [
       {
@@ -544,6 +545,7 @@ router.delete('/spot-images/:imageId', requireAuth, async (req, res) => {
 
   res.json({ message: "Successfully deleted" });
 });
+
 
 // Delete a review image
 router.delete('/review-images/:imageId', requireAuth, async (req, res) => {
