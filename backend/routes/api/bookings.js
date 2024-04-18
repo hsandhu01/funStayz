@@ -74,7 +74,12 @@ router.put('/:bookingId', requireAuth, validateBooking, async (req, res, next) =
     }
 
     if (new Date(endDate) <= new Date()) {
-      return res.status(403).json({ message: "Past bookings can't be modified" });
+      return res.status(403).json({
+        message: "Past bookings can't be modified",
+        errors: {
+          endDate: "End date cannot be in the past"
+        }
+      });
     }
 
     const conflictingBooking = await Booking.findOne({
@@ -134,7 +139,12 @@ router.delete('/:bookingId', requireAuth, async (req, res, next) => {
     }
 
     if (new Date(booking.startDate) <= new Date()) {
-      return res.status(403).json({ message: "Bookings that have been started can't be deleted" });
+      return res.status(403).json({
+        message: "Bookings that have been started can't be deleted",
+        errors: {
+          startDate: "Booking has already started and cannot be deleted"
+        }
+      });
     }
 
     await booking.destroy();

@@ -339,7 +339,7 @@ router.put('/:spotId', requireAuth, validateSpot, async (req, res) => {
   res.json(spot);
 });
 
-// Delete a spot
+// Delte a spot
 router.delete('/:spotId', requireAuth, async (req, res) => {
   const { spotId } = req.params;
   const ownerId = req.user.id;
@@ -470,6 +470,7 @@ router.post('/:spotId/bookings', requireAuth, validateBooking, async (req, res) 
   if (!spot) {
     return res.status(404).json({ message: "Spot couldn't be found" });
   }
+
 
   const conflictingBooking = await Booking.findOne({
     where: {
