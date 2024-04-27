@@ -451,10 +451,12 @@ router.put("/:reviewId", requireAuth, validateReview, async (req, res) => {
   if (isNaN(reviewId)) {
     return res.status(400).json({ message: "Invalid review ID" });
   }
+  
   const review = await Review.findByPk(reviewId);
   if (!review) {
     return res.status(404).json({ message: "Review couldn't be found" });
   }
+
   if (review.userId !== req.user.id) {
     return res.status(403).json({ message: "Forbidden" });
   }
@@ -575,7 +577,7 @@ router.post(
         },
       });
     }
-
+    
     if (new Date(endDate) <= new Date(startDate)) {
       return res.status(400).json({
         message: "Bad Request",
