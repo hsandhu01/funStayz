@@ -113,11 +113,20 @@ router.put('/:bookingId', requireAuth, validateBooking, async (req, res, next) =
 
     await booking.update({ startDate, endDate });
 
-    res.json(booking);
+    res.json({
+      id: booking.id,
+      spotId: booking.spotId,
+      userId: booking.userId,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt
+    });
   } catch (error) {
     next(error);
   }
 });
+
 
 // Delete a booking
 router.delete('/:bookingId', requireAuth, async (req, res) => {
