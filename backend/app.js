@@ -5,6 +5,9 @@ const cors = require('cors');
 const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
+const spotImagesRouter = require('./routes/api/spot-images');
+const reviewImagesRouter = require('./routes/api/review-images');
+
 // import spotsRouter
 const spotsRouter = require('./routes/api/spots');
 
@@ -33,6 +36,10 @@ app.use(csurf({
 
 // using spots routers
 app.use('/api/spots', spotsRouter);
+
+//new spot and review images routers that i should have always had
+app.use('/api/spot-images', spotImagesRouter);
+app.use('/api/review-images', reviewImagesRouter);
 
 // the rest of my routes
 const routes = require('./routes');

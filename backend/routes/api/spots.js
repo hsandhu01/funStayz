@@ -435,28 +435,36 @@ router.post('/:spotId/reviews', requireAuth, validateReview, async (req, res) =>
 router.post('/:reviewId/images', requireAuth, async (req, res) => {
   const reviewId = parseInt(req.params.reviewId, 10);
   if (isNaN(reviewId)) {
-  return res.status(400).json({ message: 'Invalid review ID' });
+    return res.status(400).json({ message: 'Invalid review ID' });
   }
+
   const review = await Review.findByPk(reviewId);
+
   if (!review) {
-  return res.status(404).json({ message: "Review couldn't be found" });
+    return res.status(404).json({ message: "Review couldn't be found" });
   }
+
   if (review.userId !== req.user.id) {
-  return res.status(403).json({ message: 'Forbidden' });
+    return res.status(403).json({ message: 'Forbidden' });
   }
+
   const imageCount = await ReviewImage.count({ where: { reviewId } });
+
   if (imageCount >= 10) {
-  return res.status(403).json({
-  message: 'Maximum number of images for this resource was reached',
-  });
+    return res.status(403).json({
+      message: 'Maximum number of images for this resource was reached',
+    });
   }
+
   const { url } = req.body;
+
   const image = await ReviewImage.create({ reviewId, url });
+
   res.json({
-  id: image.id,
-  url: image.url,
+    id: image.id,
+    url: image.url,
   });
-  });
+});
   
   // Edit a review
   router.put('/:reviewId', requireAuth, validateReview, async (req, res) => {
@@ -589,40 +597,6 @@ router.post('/:reviewId/images', requireAuth, async (req, res) => {
   });
   });
   
-  // Delete a spot image
-  router.delete('/spot-images/:imageId', requireAuth, async (req, res) => {
-  const imageId = parseInt(req.params.imageId, 10);
-  if (isNaN(imageId)) {
-  return res.status(400).json({ message: 'Invalid image ID' });
-  }
-  const image = await SpotImage.findByPk(imageId);
-  if (!image) {
-  return res.status(404).json({ message: "Spot Image couldn't be found" });
-  }
-  const spot = await Spot.findByPk(image.spotId);
-  if (!spot || spot.ownerId !== req.user.id) {
-  return res.status(403).json({ message: 'Forbidden' });
-  }
-  await image.destroy();
-  res.json({ message: 'Successfully deleted' });
-  });
- 
-  // Delete a review image
-  router.delete('/review-images/:imageId', requireAuth, async (req, res) => {
-  const imageId = parseInt(req.params.imageId, 10);
-  if (isNaN(imageId)) {
-  return res.status(400).json({ message: 'Invalid image ID' });
-  }
-  const image = await ReviewImage.findByPk(imageId);
-  if (!image) {
-  return res.status(404).json({ message: "Review Image couldn't be found" });
-  }
-  const review = await Review.findByPk(image.reviewId);
-  if (!review || review.userId !== req.user.id) {
-  return res.status(403).json({ message: 'Forbidden' });
-  }
-  await image.destroy();
-  res.json({ message: 'Successfully deleted' });
-  });
+
  
   module.exports = router;
