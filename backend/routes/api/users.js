@@ -39,35 +39,35 @@ const validateSignup = [
 // Sign up
 router.post('/', validateSignup, async (req, res, next) => {
     const { email, password, username, firstName, lastName } = req.body;
-
+  
     try {
-        const hashedPassword = bcrypt.hashSync(password);
-        const user = await User.create({ email, username, hashedPassword, firstName, lastName });
-
-        const safeUser = {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            username: user.username
-        };
-
-        await setTokenCookie(res, safeUser);
-
-        return res.json({ user: safeUser });
+      const hashedPassword = bcrypt.hashSync(password);
+      const user = await User.create({ email, username, hashedPassword, firstName, lastName });
+  
+      const safeUser = {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        username: user.username
+      };
+  
+      await setTokenCookie(res, safeUser);
+  
+      return res.json({ user: safeUser });
     } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            const errors = {};
-            error.errors.forEach(err => {
-                errors[err.path] = err.message;
-            });
-            return res.status(403).json({
-                message: 'User already exists',
-                errors
-            });
-        }
-        return next(error);
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        const errors = {};
+        error.errors.forEach(err => {
+          errors[err.path] = err.message;
+        });
+        return res.status(500).json({
+          message: 'User already exists',
+          errors
+        });
+      }
+      return next(error);
     }
-});
+  });
 
 module.exports = router;
