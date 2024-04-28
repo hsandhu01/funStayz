@@ -120,7 +120,7 @@ router.put('/:bookingId', requireAuth, validateBooking, async (req, res, next) =
       startDate: booking.startDate,
       endDate: booking.endDate,
       createdAt: booking.createdAt,
-      updatedAt: booking.updatedAt
+      updatedAt: booking.updatedAt,
     });
   } catch (error) {
     next(error);
