@@ -171,7 +171,7 @@ router.get("/", async (req, res) => {
           [sequelize.col("SpotImages.url"), "previewImage"],
         ],
       },
-      group: ["Spot.id", "SpotImages.url"],
+      group: ["Spot.id", "SpotImages.id", "SpotImages.url"],
       subQuery: false,
     });
 
@@ -225,27 +225,27 @@ router.get("/:spotId", async (req, res) => {
     include: [
       {
         model: Review,
-        as: "Reviews",
+        as: 'Reviews',
         attributes: [],
       },
       {
         model: SpotImage,
-        as: "SpotImages",
-        attributes: ["id", "url", "preview"],
+        as: 'SpotImages',
+        attributes: ['id', 'url', 'preview'],
       },
       {
         model: User,
-        as: "Owner",
-        attributes: ["id", "firstName", "lastName"],
+        as: 'Owner',
+        attributes: ['id', 'firstName', 'lastName'],
       },
     ],
     attributes: {
       include: [
-        [sequelize.fn("COUNT", sequelize.col("Reviews.id")), "numReviews"],
-        [sequelize.fn("AVG", sequelize.col("Reviews.stars")), "avgStarRating"],
+        [sequelize.fn('COUNT', sequelize.col('Reviews.id')), 'numReviews'],
+        [sequelize.fn('AVG', sequelize.col('Reviews.stars')), 'avgStarRating'],
       ],
     },
-    group: ["Spot.id", "SpotImages.id", "Owner.id"],
+    group: ['Spot.id', 'SpotImages.id', 'Owner.id'],
   });
 
   if (!spot) {
