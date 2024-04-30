@@ -119,7 +119,7 @@ router.get("/", async (req, res) => {
   }
 
   if (Object.keys(errors).length > 0) {
-    return res.status(400).json({ message: "Bad Request", errors });
+    return res.status(400).json({ message: "Validation error", errors });
   }
 
   try {
@@ -249,7 +249,7 @@ router.get("/:spotId", async (req, res) => {
   });
 
   if (!spot) {
-    return res.status(404).json({ message: "Spot couldn't be found" });
+    return res.status(404).json({ message: "Couldn't find a Spot with the specified id" });
   }
 
   res.json(spot);
@@ -275,7 +275,11 @@ router.post("/", requireAuth, validateSpot, async (req, res) => {
       price,
     });
 
-    res.status(201).json(spot);
+    res.status(201).json({
+      createdAt: spot.createdAt,
+      updatedAt: spot.updatedAt,
+      ...spot.dataValues
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -304,7 +308,7 @@ router.post("/:spotId/images", requireAuth, async (req, res) => {
 
   const image = await SpotImage.create({ spotId, url, preview });
 
-  res.json({
+  res.status(200).json({
     id: image.id,
     url: image.url,
     preview: image.preview,
@@ -344,7 +348,10 @@ router.put("/:spotId", requireAuth, validateSpot, async (req, res) => {
     price,
   });
 
-  res.json(spot);
+  res.json({
+    updatedAt: spot.updatedAt,
+    ...spot.dataValues
+  });
 });
 
 // Delete a spot
@@ -368,7 +375,7 @@ router.delete("/:spotId", requireAuth, async (req, res) => {
 
   await spot.destroy();
 
-  res.json({ message: "Successfully deleted" });
+  res.status(200).json({ message: "Successfully deleted" });
 });
 
 // Get all reviews by a spot's id
@@ -480,7 +487,7 @@ router.delete("/:reviewId", requireAuth, async (req, res) => {
     return res.status(403).json({ message: "Forbidden" });
   }
   await review.destroy();
-  res.json({ message: "Successfully deleted" });
+  res.status(200).json({ message: "Successfully deleted" });
 });
 
 // Get all bookings for a spot based on the spot's id

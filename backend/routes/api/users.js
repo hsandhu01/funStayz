@@ -33,7 +33,6 @@ const validateSignup = [
         .exists({ checkFalsy: true })
         .withMessage('Last name is required.'),
     handleValidationErrors,
-
 ];
 
 // Sign up

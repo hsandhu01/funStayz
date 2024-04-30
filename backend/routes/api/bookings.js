@@ -6,8 +6,6 @@ const { requireAuth, restoreUser } = require('../../utils/auth');
 const { handleValidationErrors } = require('../../utils/validation');
 const { Op } = require('sequelize');
 
-
-
 const validateBooking = [
   check('startDate')
     .exists({ checkFalsy: true })
@@ -102,7 +100,7 @@ router.put('/:bookingId', requireAuth, validateBooking, async (req, res, next) =
     });
 
     if (conflictingBooking) {
-      return res.status(403).json({
+      return res.status(409).json({
         message: "Sorry, this spot is already booked for the specified dates",
         errors: {
           startDate: "Start date conflicts with an existing booking",
@@ -126,7 +124,6 @@ router.put('/:bookingId', requireAuth, validateBooking, async (req, res, next) =
     next(error);
   }
 });
-
 
 // Delete a booking
 router.delete('/:bookingId', requireAuth, async (req, res) => {
