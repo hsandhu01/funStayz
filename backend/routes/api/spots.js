@@ -119,7 +119,7 @@ router.get("/", async (req, res) => {
   }
 
   if (Object.keys(errors).length > 0) {
-    return res.status(400).json({ message: "Validation error", errors });
+    return res.status(400).json({ message: "Bad Request", errors });
   }
 
   try {
