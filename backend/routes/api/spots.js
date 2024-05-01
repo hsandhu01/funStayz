@@ -546,14 +546,7 @@ router.get("/:spotId/bookings", requireAuth, async (req, res) => {
     // If the user is not the owner of the spot, return all bookings without user information
     const bookings = await Booking.findAll({
       where: { spotId },
-      attributes: [
-        "id",
-        "spotId",
-        "startDate",
-        "endDate",
-        "createdAt",
-        "updatedAt",
-      ],
+      attributes: ["spotId", "startDate", "endDate"],
     });
     res.json({ Bookings: bookings });
   }
