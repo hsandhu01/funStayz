@@ -175,7 +175,23 @@ router.get("/", async (req, res) => {
       subQuery: false,
     });
 
-    res.status(200).json({ Spots: spots, page, size });
+    res.status(200).json({ Spots: spots.map(spot => ({
+      id: spot.id,
+      ownerId: spot.ownerId,
+      address: spot.address,
+      city: spot.city,
+      state: spot.state,
+      country: spot.country,
+      lat: spot.lat,
+      lng: spot.lng,
+      name: spot.name,
+      description: spot.description,
+      price: spot.price,
+      createdAt: spot.createdAt,
+      updatedAt: spot.updatedAt,
+      avgRating: spot.dataValues.avgRating,
+      previewImage: spot.dataValues.previewImage
+    })), page, size });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -211,7 +227,23 @@ router.get("/current", requireAuth, async (req, res) => {
     group: ["Spot.id", "SpotImages.url"],
   });
 
-  res.json({ Spots: spots });
+  res.status(200).json({ Spots: spots.map(spot => ({
+    id: spot.id,
+    ownerId: spot.ownerId,
+    address: spot.address,
+    city: spot.city,
+    state: spot.state,
+    country: spot.country,
+    lat: spot.lat,
+    lng: spot.lng,
+    name: spot.name,
+    description: spot.description,
+    price: spot.price,
+    createdAt: spot.createdAt,
+    updatedAt: spot.updatedAt,
+    avgRating: spot.dataValues.avgRating,
+    previewImage: spot.dataValues.previewImage
+  })) });
 });
 
 // Get details of a spot from an id
