@@ -12,14 +12,16 @@ const validateSpot = [
     .exists({ checkFalsy: true })
     .withMessage("Street address is required"),
   check("city").exists({ checkFalsy: true }).withMessage("City is required"),
+check("state").exists({ checkFalsy: true }).withMessage("State is required"),
+check("country").exists({ checkFalsy: true }).withMessage("Country is required"),
   check("lat")
     .exists({ checkFalsy: true })
-    .withMessage("Latitude is required")
+    .withMessage("Latitude is not valid")
     .isFloat({ min: -90, max: 90 })
     .withMessage("Latitude must be between -90 and 90"),
   check("lng")
     .exists({ checkFalsy: true })
-    .withMessage("Longitude is required")
+    .withMessage("Longitude is not valid")
     .isFloat({ min: -180, max: 180 })
     .withMessage("Longitude must be between -180 and 180"),
   check("name")
@@ -368,22 +370,37 @@ router.put("/:spotId", requireAuth, validateSpot, async (req, res) => {
     return res.status(403).json({ message: "Forbidden" });
   }
 
-  await spot.update({
-    address,
-    city,
-    state,
-    country,
-    lat,
-    lng,
-    name,
-    description,
-    price,
-  });
+  try {
+    await spot.update({
+      address,
+      city,
+      state,
+      country,
+      lat,
+      lng,
+      name,
+      description,
+      price,
+    });
 
-  res.json({
-    updatedAt: spot.updatedAt,
-    ...spot.dataValues
-  });
+    res.json({
+      updatedAt: spot.updatedAt,
+      ...spot.dataValues
+    });
+  } catch (error) {
+    if (error.name === "SequelizeValidationError") {
+      const errors = {};
+      error.errors.forEach((e) => {
+        errors[e.path] = e.message;
+      });
+      return res.status(400).json({
+        message: "Validation error",
+        errors
+      });
+    }
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 // Delete a spot
@@ -541,14 +558,22 @@ router.get("/:spotId/bookings", requireAuth, async (req, res) => {
         attributes: ["id", "firstName", "lastName"],
       },
     });
-    res.json({ Bookings: bookings });
+    res.json({ Bookings: bookings.map(booking => ({
+      spotId: booking.spotId,
+      startDate: booking.startDate,
+      endDate: booking.endDate
+    })) });
   } else {
     // If the user is not the owner of the spot, return all bookings without user information
     const bookings = await Booking.findAll({
       where: { spotId },
       attributes: ["spotId", "startDate", "endDate"],
     });
-    res.json({ Bookings: bookings });
+    res.json({ Bookings: bookings.map(booking => ({
+      spotId: booking.spotId,
+      startDate: booking.startDate,
+      endDate: booking.endDate
+    })) });
   }
 });
 
